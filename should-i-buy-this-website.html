@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Should I Buy This? — AI-powered shopping decisions</title>
+  <meta name="description" content="Scan any product barcode and get an instant AI verdict. Stop impulse buying. Save money. Shop smarter." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0F172A;
+      --bg-card: #1E293B;
+      --bg-muted: #334155;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --text-faint: #475569;
+      --accent: #6366F1;
+      --accent-light: #818CF8;
+      --accent-bg: #1E1B4B;
+      --buy: #22C55E;
+      --skip: #EF4444;
+      --maybe: #F59E0B;
+      --border: #1E293B;
+      --border-light: #334155;
+      --radius: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-emoji { font-size: 24px; }
+    .nav-logo-text { font-size: 17px; font-weight: 800; color: var(--text); }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 15px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #fff; border: none;
+      padding: 10px 22px; border-radius: 10px; font-size: 14px;
+      font-weight: 700; cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 140px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Gradient orbs */
+    .hero::before {
+      content: '';
+      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 800px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: -100px; right: -100px;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent-bg); border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 100px; padding: 6px 16px; margin-bottom: 32px;
+      font-size: 13px; font-weight: 600; color: var(--accent-light);
+    }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--buy); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+    .hero h1 {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 900; line-height: 1.05;
+      letter-spacing: -2px; margin-bottom: 24px;
+      background: linear-gradient(135deg, #F1F5F9 0%, #94A3B8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent-light) 0%, #A78BFA 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(17px, 2.5vw, 22px);
+      color: var(--text-muted); max-width: 560px;
+      margin: 0 auto 48px; line-height: 1.6;
+    }
+
+    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 72px; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #fff;
+      padding: 16px 32px; border-radius: 14px; font-size: 16px;
+      font-weight: 700; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 40px rgba(99,102,241,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(99,102,241,0.5); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--text);
+      padding: 16px 32px; border-radius: 14px; font-size: 16px;
+      font-weight: 600; text-decoration: none;
+      border: 1.5px solid var(--border-light);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); background: var(--accent-bg); }
+
+    /* ── Phone mockup ── */
+    .phone-wrap { position: relative; display: inline-block; }
+    .phone {
+      width: 280px; background: #0A0F1E; border-radius: 40px;
+      border: 2px solid var(--border-light);
+      box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden; position: relative;
+    }
+    .phone-notch {
+      width: 100px; height: 28px; background: #0A0F1E;
+      border-radius: 0 0 20px 20px; margin: 0 auto;
+      position: relative; z-index: 2;
+      border: 2px solid var(--border-light); border-top: none;
+    }
+    .phone-screen { padding: 0 14px 20px; }
+
+    /* Scan screen mockup */
+    .mock-scanner {
+      background: #000; border-radius: 20px; overflow: hidden;
+      aspect-ratio: 9/16; position: relative;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .mock-scanner-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.7) 100%);
+    }
+    .mock-frame {
+      width: 160px; height: 160px; position: relative;
+      border: none;
+    }
+    .mock-corner {
+      position: absolute; width: 24px; height: 24px;
+      border-color: var(--accent); border-style: solid;
+    }
+    .mock-corner.tl { top:0;left:0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .mock-corner.tr { top:0;right:0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .mock-corner.bl { bottom:0;left:0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .mock-corner.br { bottom:0;right:0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    .mock-scanline {
+      position: absolute; left: 8px; right: 8px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scan 2s ease-in-out infinite;
+    }
+    @keyframes scan { 0%{top:8px}100%{top:calc(100% - 10px)} }
+    .mock-hint { position: absolute; bottom: 20px; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 600; }
+    .mock-header { position: absolute; top: 20px; text-align: center; }
+    .mock-header-title { font-size: 14px; font-weight: 800; color: #fff; }
+    .mock-header-sub { font-size: 10px; color: rgba(255,255,255,0.6); }
+
+    /* Result mockup */
+    .mock-result { padding: 16px 12px; }
+    .mock-verdict-hero {
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 12px;
+    }
+    .mock-verdict-emoji { font-size: 32px; margin-bottom: 4px; }
+    .mock-verdict-label { font-size: 18px; font-weight: 900; color: var(--buy); margin-bottom: 2px; }
+    .mock-verdict-headline { font-size: 11px; color: var(--text-muted); }
+    .mock-score-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .mock-score-ring {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 3px solid var(--buy);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mock-score-num { font-size: 14px; font-weight: 900; color: var(--buy); }
+    .mock-score-label { font-size: 10px; color: var(--text-muted); }
+    .mock-reasoning { font-size: 10px; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px; }
+    .mock-btn-row { display: flex; gap: 6px; }
+    .mock-btn { flex: 1; border-radius: 8px; padding: 8px; text-align: center; font-size: 10px; font-weight: 700; }
+    .mock-btn-primary { background: var(--accent); color: #fff; }
+    .mock-btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border-light); }
+
+    /* Floating verdict badges */
+    .float-badge {
+      position: absolute;
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: 12px; padding: 10px 14px;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      white-space: nowrap;
+      animation: float 4s ease-in-out infinite;
+    }
+    .float-badge.left { left: -110px; top: 30%; animation-delay: -2s; }
+    .float-badge.right { right: -110px; top: 55%; }
+    @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+    .float-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .float-text { font-size: 12px; font-weight: 600; color: var(--text); }
+    .float-sub { font-size: 10px; color: var(--text-muted); }
+
+    /* ── Section shared ── */
+    section { padding: 100px 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-tag {
+      display: inline-block; background: var(--accent-bg);
+      border: 1px solid rgba(99,102,241,0.3);
+      color: var(--accent-light); font-size: 12px; font-weight: 700;
+      padding: 5px 14px; border-radius: 100px; margin-bottom: 16px;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .section-title {
+      font-size: clamp(30px, 4vw, 46px);
+      font-weight: 900; letter-spacing: -1px;
+      margin-bottom: 16px; line-height: 1.1;
+    }
+    .section-sub { font-size: 18px; color: var(--text-muted); max-width: 560px; line-height: 1.6; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      background: var(--bg-card); border-top: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--border-light);
+      padding: 40px 24px;
+    }
+    .stats-grid { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; text-align: center; }
+    .stat-num { font-size: 36px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+    .stat-label { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+
+    /* ── How it works ── */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
+    .step {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius); padding: 32px 28px;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .step:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .step::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+    .step-num {
+      font-size: 48px; font-weight: 900; color: var(--accent);
+      opacity: 0.15; position: absolute; top: 16px; right: 20px;
+    }
+    .step-icon { font-size: 40px; margin-bottom: 20px; }
+    .step-title { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+    .step-text { font-size: 15px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Features ── */
+    .features-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; margin-top: 56px; }
+    .feature-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius); padding: 28px;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--border-light); }
+    .feature-card.wide { grid-column: span 2; }
+    .feature-icon { font-size: 32px; margin-bottom: 16px; }
+    .feature-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .feature-text { font-size: 15px; color: var(--text-muted); line-height: 1.6; }
+
+    /* Verdict examples */
+    .verdict-examples { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+    .verdict-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-muted); border-radius: 100px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600;
+    }
+    .verdict-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── Testimonials ── */
+    .testimonials { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 56px; }
+    .testimonial {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius); padding: 28px;
+    }
+    .testimonial-text { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; font-size: 20px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); }
+    .testimonial-name { font-size: 14px; font-weight: 700; }
+    .testimonial-handle { font-size: 12px; color: var(--text-faint); }
+    .stars { color: #FBBF24; font-size: 13px; margin-bottom: 12px; }
+
+    /* ── CTA section ── */
+    .cta-section {
+      text-align: center; padding: 120px 24px;
+      position: relative; overflow: hidden;
+    }
+    .cta-section::before {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 { font-size: clamp(32px,5vw,56px); font-weight: 900; letter-spacing: -1.5px; margin-bottom: 20px; }
+    .cta-section p { font-size: 18px; color: var(--text-muted); margin-bottom: 40px; }
+    .store-badges { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .store-badge {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-card); border: 1.5px solid var(--border-light);
+      border-radius: 14px; padding: 14px 24px;
+      text-decoration: none; color: var(--text);
+      transition: border-color 0.2s, background 0.2s;
+      min-width: 180px;
+    }
+    .store-badge:hover { border-color: var(--accent); background: var(--accent-bg); }
+    .store-badge-icon { font-size: 28px; }
+    .store-badge-label { font-size: 11px; color: var(--text-muted); }
+    .store-badge-name { font-size: 17px; font-weight: 800; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border-light);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .footer-logo { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+    .footer-text { font-size: 14px; color: var(--text-faint); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .steps { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .feature-card.wide { grid-column: span 1; }
+      .testimonials { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .float-badge { display: none; }
+      .phone { width: 240px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="#">
+      <span class="nav-logo-emoji">🛒</span>
+      <span class="nav-logo-text">Should I Buy This?</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#reviews">Reviews</a></li>
+    </ul>
+    <a href="#download" class="nav-cta">Download Free</a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Powered by GPT-4o
+    </div>
+
+    <h1>Stop buying things<br/>you <span>shouldn't.</span></h1>
+
+    <p class="hero-sub">
+      Scan any product barcode. Get an instant AI verdict on whether it's a good deal, worth your money, and if you've been buying it too often.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">📱 Download the App</a>
+      <a href="#how" class="btn-secondary">See how it works →</a>
+    </div>
+
+    <!-- Phone mockup -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <!-- Scanner view -->
+          <div class="mock-scanner">
+            <div class="mock-scanner-bg"></div>
+            <div class="mock-header">
+              <div class="mock-header-title">Scan Product</div>
+              <div class="mock-header-sub">AI verdict in seconds</div>
+            </div>
+            <div class="mock-frame">
+              <div class="mock-corner tl"></div>
+              <div class="mock-corner tr"></div>
+              <div class="mock-corner bl"></div>
+              <div class="mock-corner br"></div>
+              <div class="mock-scanline"></div>
+            </div>
+            <div class="mock-hint">Point at any barcode</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating verdict badges -->
+      <div class="float-badge left">
+        <div class="float-dot" style="background:var(--buy)"></div>
+        <div>
+          <div class="float-text">✅ Buy it!</div>
+          <div class="float-sub">Score: 87/100</div>
+        </div>
+      </div>
+      <div class="float-badge right">
+        <div class="float-dot" style="background:var(--skip)"></div>
+        <div>
+          <div class="float-text">❌ Skip it.</div>
+          <div class="float-sub">You bought this last week</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num">50K+</div>
+        <div class="stat-label">Products scanned</div>
+      </div>
+      <div>
+        <div class="stat-num">£82</div>
+        <div class="stat-label">Avg. monthly savings</div>
+      </div>
+      <div>
+        <div class="stat-num">3s</div>
+        <div class="stat-label">Average verdict time</div>
+      </div>
+      <div>
+        <div class="stat-num">4.9★</div>
+        <div class="stat-label">App store rating</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <section id="how">
+    <div class="container">
+      <div class="section-tag">How it works</div>
+      <h2 class="section-title">Scan. Decide. Save.</h2>
+      <p class="section-sub">Three steps between you and a smarter purchase decision.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-icon">📷</div>
+          <div class="step-title">Scan the barcode</div>
+          <div class="step-text">Point your camera at any EAN, UPC, or QR code. Works on groceries, electronics, cosmetics, clothing — anything with a barcode.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-icon">💷</div>
+          <div class="step-title">Enter the price</div>
+          <div class="step-text">Optionally tell us what they're charging. AI can still give a verdict without it, but the more context, the sharper the advice.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-icon">🧠</div>
+          <div class="step-title">Get your verdict</div>
+          <div class="step-text">GPT-4o analyses the product, your purchase history, and the price. You get a clear Buy / Skip / Maybe with a score out of 100 and honest reasoning.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" style="padding-top: 0;">
+    <div class="container">
+      <div class="section-tag">Features</div>
+      <h2 class="section-title">Everything you need to<br/>shop without regret.</h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <div class="feature-title">Clear Buy / Skip / Maybe verdicts</div>
+          <div class="feature-text">No wishy-washy advice. Every scan gets a definitive verdict with a buy score from 0 to 100 and plain-English reasoning you can act on instantly.</div>
+          <div class="verdict-examples">
+            <div class="verdict-pill"><div class="dot" style="background:var(--buy)"></div> Buy it — great value</div>
+            <div class="verdict-pill"><div class="dot" style="background:var(--skip)"></div> Skip — cheaper online</div>
+            <div class="verdict-pill"><div class="dot" style="background:var(--maybe)"></div> Maybe — check reviews</div>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <div class="feature-title">Purchase memory</div>
+          <div class="feature-text">The app remembers every product you've scanned. Buying Pringles for the 6th time this month? AI will notice and factor that into its verdict.</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💡</div>
+          <div class="feature-title">Smarter alternatives</div>
+          <div class="feature-text">When you should skip something, AI suggests what to buy instead — with estimated savings so you know exactly how much better the alternative is.</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🥗</div>
+          <div class="feature-title">Nutri-Score aware</div>
+          <div class="feature-text">For food products, the AI considers nutritional quality (Nutri-Score A–E) alongside price, so you're not just saving money — you're eating better too.</div>
+        </div>
+
+        <div class="feature-card wide">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Your scan history & savings tracker</div>
+          <div class="feature-text">Every scan is saved. Browse your full history grouped by date, filter by verdict, search by product name. See at a glance how much money you've saved by following AI's "skip" verdicts.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Result mockup section -->
+  <section style="padding-top: 0;">
+    <div class="container">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;">
+        <div>
+          <div class="section-tag">AI Verdict</div>
+          <h2 class="section-title" style="font-size:36px;">Honest advice in under 3 seconds.</h2>
+          <p class="section-sub" style="font-size:16px;">
+            GPT-4o doesn't just say "looks good." It tells you <em>why</em> — factoring in your purchase frequency, the price you're paying, any available nutrition data, and what alternatives exist nearby.
+          </p>
+          <div style="margin-top:28px; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <div style="font-size:20px; flex-shrink:0;">✅</div>
+              <div><strong style="font-size:15px;">Buy</strong> — <span style="color:var(--text-muted);font-size:15px;">Good deal, appropriate for your habits</span></div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <div style="font-size:20px; flex-shrink:0;">❌</div>
+              <div><strong style="font-size:15px;">Skip</strong> — <span style="color:var(--text-muted);font-size:15px;">Overpriced, impulse buy, or you've got it already</span></div>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <div style="font-size:20px; flex-shrink:0;">🤔</div>
+              <div><strong style="font-size:15px;">Maybe</strong> — <span style="color:var(--text-muted);font-size:15px;">Worth thinking about with caveats</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result phone mockup -->
+        <div style="display:flex; justify-content:center;">
+          <div class="phone" style="width:260px;">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="mock-result">
+                <div class="mock-verdict-hero">
+                  <div class="mock-verdict-emoji">✅</div>
+                  <div class="mock-verdict-label">Buy it!</div>
+                  <div class="mock-verdict-headline">Great value — buy it today</div>
+                  <div class="mock-score-row">
+                    <div class="mock-score-ring">
+                      <div class="mock-score-num">87</div>
+                    </div>
+                    <div>
+                      <div style="font-size:11px; font-weight:700; color:var(--text)">Buy Score</div>
+                      <div style="font-size:10px; color:var(--text-muted)">Last bought: 3 weeks ago</div>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:6px;">Heinz Baked Beans</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">£0.89 at Tesco</div>
+                <div class="mock-reasoning">This is a solid staple at a fair price. You haven't bought it recently, Nutri-Score B indicates decent nutrition, and it's within your typical grocery budget.</div>
+                <div class="mock-btn-row">
+                  <div class="mock-btn mock-btn-secondary">📷 Scan Again</div>
+                  <div class="mock-btn mock-btn-primary">🏠 Home</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section id="reviews">
+    <div class="container">
+      <div class="section-tag">Reviews</div>
+      <h2 class="section-title">People are shopping smarter.</h2>
+
+      <div class="testimonials">
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <div class="testimonial-text">"I've saved over £200 in two months just by actually checking before I throw things in the trolley. The 'you bought this last week' reminder alone is worth it."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">👩</div>
+            <div>
+              <div class="testimonial-name">Sarah M.</div>
+              <div class="testimonial-handle">Bristol, UK</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <div class="testimonial-text">"Finally an app that gives a straight answer. Not 'here are 47 similar products' — just a yes or no with a reason. My impulse spending is down 60%."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">👨</div>
+            <div>
+              <div class="testimonial-name">James T.</div>
+              <div class="testimonial-handle">Manchester, UK</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <div class="testimonial-text">"I used to walk round Sainsbury's just chucking stuff in. Now I scan everything. It's genuinely changed how I shop. My partner thinks I've become a different person."</div>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">👩‍🦱</div>
+            <div>
+              <div class="testimonial-name">Priya K.</div>
+              <div class="testimonial-handle">London, UK</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="download" class="cta-section">
+    <div class="container">
+      <h2>Ready to shop smarter?</h2>
+      <p>Free to download. No subscription. Just better decisions.</p>
+      <div class="store-badges">
+        <a href="#" class="store-badge">
+          <div class="store-badge-icon">🍎</div>
+          <div>
+            <div class="store-badge-label">Download on the</div>
+            <div class="store-badge-name">App Store</div>
+          </div>
+        </a>
+        <a href="#" class="store-badge">
+          <div class="store-badge-icon">🤖</div>
+          <div>
+            <div class="store-badge-label">Get it on</div>
+            <div class="store-badge-name">Google Play</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-logo">🛒 Should I Buy This?</div>
+    <div class="footer-text">© 2026 Should I Buy This? · Made with 🧠 &amp; GPT-4o · <a href="#" style="color:var(--text-faint)">Privacy</a> · <a href="#" style="color:var(--text-faint)">Terms</a></div>
+  </footer>
+
+</body>
+</html>
